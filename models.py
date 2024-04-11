@@ -53,6 +53,7 @@ class Post(BaseModel):
     content: str = Field(...) 
     comments_id: List[str] = Field(...) 
     research_link: str = Field(...)
+    comment_parent_id: str = Field(...)
     visibility : int = Field(...)
     file_path: str = Field(...)
     created_at : datetime = Field(...)
