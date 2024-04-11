@@ -1,13 +1,66 @@
-from typing import Optional
+from datetime import datetime
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
 
-class CollegeSchema(BaseModel):
+class Institution(BaseModel):
     name: str = Field(...)
     homepage: str = Field(...)
+    country: str = Field(...)
+    members : List[str] = Field(...)  
 
-
-class UpdateCollegeModel(BaseModel):
+class UpdateInstitutionModel(BaseModel):
     name: Optional[str] = Field(...)
     homepage: Optional[str] = Field(...)
+
+class UserType(BaseModel):
+    _id: str
+    code: int = Field(...)
+    type: str = Field(...)
+
+class User(BaseModel): 
+    display_name: str = Field(...)
+    username: str = Field(...)
+    password: str = Field(...)
+    user_type_id: str = Field(...)
+    college_id: str = Field(...)
+    birth_date: datetime = Field(...)
+    posts_id: List[str] = Field(...)
+    comments_id: List[str] = Field(...)
+    liked_posts_id: List[str] = Field(...)
+    follows_id :List[str] = Field(...)
+    followers_id : List[str]  = Field(...)
+
+class UpdateUserModel(BaseModel): 
+    display_name: Optional[str] = Field(...)
+    username: Optional[str] = Field(...)
+    password: Optional[str] = Field(...)
+    user_type_id: Optional[str] = Field(...)
+    institution_id: Optional[str] = Field(...)
+    birth_date: Optional[datetime] = Field(...)
+    posts_id: Optional[List[str]] = Field(...)
+    comments_id: Optional[List[str]]  = Field(...)
+    liked_posts_id: Optional[List[str]]  = Field(...)
+    follows_id :Optional[List[str]]  = Field(...)
+    followers_id : Optional[List[str]]   = Field(...)
+
+class Post(BaseModel):
+    title:str = Field(...)
+    categories_id: List[str] = Field(...) 
+    author_id: str = Field(...) 
+    summary: str = Field(...)
+    content: str = Field(...) 
+    comments_id: List[str] = Field(...) 
+    research_link: str = Field(...)
+    visibility : int = Field(...)
+    file_path: str = Field(...)
+    created_at : datetime = Field(...)
+
+class Category(BaseModel):
+    name:str = Field(...)
+    posts_id: List[str] = Field(...)
+
+
+
+

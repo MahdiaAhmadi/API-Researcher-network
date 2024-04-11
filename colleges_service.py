@@ -5,7 +5,7 @@ from bson.objectid import ObjectId
 from fastapi import APIRouter, Body
 from fastapi.encoders import jsonable_encoder
 
-from models import CollegeSchema, UpdateCollegeModel
+from models import Institution, UpdateInstitutionModel
 
 MONGO_DETAILS = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 
@@ -22,10 +22,6 @@ def college_helper(college):
         "name": college["name"],
         "homepage": college["homepage"],
     }
-
-
-
-
 
 def ResponseModel(data, message):
     return {
@@ -84,7 +80,7 @@ async def delete_college(id: str):
 
 CollegeRouter = APIRouter()
 @CollegeRouter.post("/", response_description="College added to database")
-async def add_college_data(college: CollegeSchema = Body(...)):
+async def add_college_data(college: Institution = Body(...)):
     college = jsonable_encoder(college)
     new_college = await add_college(college)
     return ResponseModel(new_college, "College added successfully.")
@@ -104,7 +100,7 @@ async def get_college_data(id):
     return ErrorResponseModel("An error occurred.", 404, "College doesn't exist.")
 
 @CollegeRouter.put("/{id}")
-async def update_college_data(id: str, req: UpdateCollegeModel = Body(...)):
+async def update_college_data(id: str, req: UpdateInstitutionModel = Body(...)):
     req = {k: v for k, v in req.dict().items() if v is not None}
     updated_college = await update_college(id, req)
     if updated_college:
