@@ -53,7 +53,6 @@ class Post(BaseModel):
     content: str = Field(...) 
     comments_id: List[str] = Field(...) 
     research_link: str = Field(...)
-    comment_parent_id: str = Field(...)
     visibility : int = Field(...)
     file_path: str = Field(...)
     created_at : datetime = Field(...)
@@ -61,6 +60,21 @@ class Post(BaseModel):
 class Category(BaseModel):
     name:str = Field(...)
     posts_id: List[str] = Field(...)
+
+class CommentList(BaseModel):
+    _id: str
+    author_id : str = Field(...)
+    post_id : str = Field(...)
+    parent_comment_id: Optional[str] = Field(...)
+    content : str = Field(...)
+    created_at : datetime = Field(...) 
+
+class CommentCreate(BaseModel):
+    author_id : str = Field(...)
+    post_id : str = Field(...)
+    parent_comment_id: Optional[str] = Field(...)
+    content : str = Field(...)
+    created_at : datetime = Field(...) 
 
 
 
