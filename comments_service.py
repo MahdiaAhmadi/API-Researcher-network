@@ -16,7 +16,7 @@ async def list_comments():
     documents = await getAll(comments_collection)
     return ResponseModel(documents, "List of all comments")
 
-@CommentRouter.comment("/")
+@CommentRouter.post("/")
 async def create_comment(comment: CommentCreate):
     response = await addOne(comments_collection, comment.model_dump())
     return ResponseModel(response, "Comment was created")

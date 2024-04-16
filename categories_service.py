@@ -16,7 +16,7 @@ async def list_categories():
     documents = await getAll(categories_collection)
     return ResponseModel(documents, "List of all categories")
 
-@CategoryRouter.category("/")
+@CategoryRouter.post("/")
 async def create_category(category: Category):
     response = await addOne(categories_collection, category.model_dump())
     return ResponseModel(response, "Category was created")
