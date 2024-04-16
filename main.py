@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from colleges_service import InstitutionRouter
+from institutions_service import InstitutionRouter
 from users_service import UserRouter
 from posts_service import PostRouter
 from comments_service import CommentRouter
