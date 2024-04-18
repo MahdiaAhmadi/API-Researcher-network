@@ -1,5 +1,6 @@
 from bson.objectid import ObjectId
 
+
 def responseid_handler(response):
     sanitized_resp = {}
     for k,v in response.items():
@@ -25,6 +26,8 @@ async def getAll(collection):
     async for item in collection.find():
         items.append(responseid_handler(item))
     return items
+
+
 
 async def getOne(collection, id):
     item = await collection.find_one({"_id": ObjectId(id)})
@@ -57,7 +60,7 @@ async def deleteOne(collection, id):
 
 def ResponseModel(data, message):
     return {
-        "data": [data],
+        "data": data,
         "code": 200,
         "message": message,
     }

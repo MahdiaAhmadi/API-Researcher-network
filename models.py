@@ -19,6 +19,10 @@ class UserType(BaseModel):
     code: int = Field(...)
     type: str = Field(...)
 
+class LoginUser(BaseModel):
+    username: str 
+    password: str 
+
 class User(BaseModel): 
     display_name: str = Field(...)
     username: str = Field(...)

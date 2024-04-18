@@ -1,10 +1,11 @@
-from helpers import ErrorResponseModel, ResponseModel, addOne, deleteOne, getAll, getOne, updateOne
-from motor.motor_asyncio import AsyncIOMotorClient
 from bson.objectid import ObjectId
 from fastapi import APIRouter, Body
 from fastapi.encoders import jsonable_encoder
+from motor.motor_asyncio import AsyncIOMotorClient
 
-from models import User, UpdateUserModel
+from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
+                     getAll, getOne, responseid_handler, updateOne)
+from models import LoginUser, User
 
 # MongoDB connection URL
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
@@ -14,6 +15,13 @@ users_collection = database["users"]
 usertype_collection = database["user_type"]
 
 UserRouter = APIRouter()
+
+@UserRouter.post("/login")
+async def get_login(credentials:LoginUser):
+    user = await login(credentials.username, credentials.password)
+    if(user is None):
+        return ErrorResponseModel("Unauthenticated", 401, "User not authenticated")
+    return ResponseModel(user, "Logged User")
 
 @UserRouter.get("/users-list")
 async def list_users():
@@ -51,3 +59,10 @@ async def delete_user(user_id: str):
     if deleted_user:
         return ResponseModel({"id": user_id}, "User sucessfully deleted")
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
+
+
+async def login(username, password):
+    user = await users_collection.find_one({"username": username, "password":password})
+    if user:
+        return responseid_handler(user)
+    return None
