@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -23,19 +23,28 @@ class LoginUser(BaseModel):
     username: str 
     password: str 
 
-class User(BaseModel): 
+class AccountCreate(BaseModel):
     display_name: str = Field(...)
+    email: str = Field(...)
     username: str = Field(...)
     password: str = Field(...)
-    profile_description: str = Field(...)
     user_type_id: str = Field(...)
-    institution_id: str = Field(...)
-    birth_date: datetime = Field(...)
-    posts_id: List[str] = Field(...)
-    comments_id: List[str] = Field(...)
-    liked_posts_id: List[str] = Field(...)
-    follows_id :List[str] = Field(...)
-    followers_id : List[str]  = Field(...)
+    birth_date: str = Field(...)
+
+class User(BaseModel): 
+    display_name: str = Field(...)
+    email: str = Field(...)
+    username: str = Field(...)
+    password: str = Field(...)
+    profile_description: Optional[str] = Field(...)
+    user_type_id: str = Field(...)
+    institution_id: Optional[str] = Field(...)
+    birth_date: date = Field(...)
+    posts_id: Optional[List[str]] = Field(...)
+    comments_id: Optional[List[str]] = Field(...)
+    liked_posts_id:Optional[List[str]] = Field(...)
+    follows_id :Optional[List[str]] = Field(...)
+    followers_id : Optional[List[str]]  = Field(...)
 
 class UpdateUserModel(BaseModel): 
     display_name: Optional[str] = Field(...)
@@ -43,7 +52,7 @@ class UpdateUserModel(BaseModel):
     password: Optional[str] = Field(...)
     user_type_id: Optional[str] = Field(...)
     institution_id: Optional[str] = Field(...)
-    birth_date: Optional[datetime] = Field(...)
+    birth_date: Optional[date] = Field(...)
     posts_id: Optional[List[str]] = Field(...)
     comments_id: Optional[List[str]]  = Field(...)
     liked_posts_id: Optional[List[str]]  = Field(...)
@@ -60,7 +69,7 @@ class Post(BaseModel):
     research_link: str = Field(...)
     visibility : int = Field(...)
     file_path: str = Field(...)
-    created_at : datetime = Field(...)
+    created_at : date = Field(...)
 
 class Category(BaseModel):
     name:str = Field(...)
@@ -72,14 +81,14 @@ class CommentList(BaseModel):
     post_id : str = Field(...)
     parent_comment_id: Optional[str] = Field(...)
     content : str = Field(...)
-    created_at : datetime = Field(...) 
+    created_at : date = Field(...) 
 
 class CommentCreate(BaseModel):
     author_id : str = Field(...)
     post_id : str = Field(...)
     parent_comment_id: Optional[str] = Field(...)
     content : str = Field(...)
-    created_at : datetime = Field(...) 
+    created_at : date = Field(...) 
 
 
 
