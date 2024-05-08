@@ -34,6 +34,17 @@ async def getOne(collection, id):
     if item:
         return responseid_handler(item)
 
+async def getFromIDList(initial_collection, key, value, id_field, secondary_collection):
+    initial_item = await initial_collection.find_one({key:value}, projection=[id_field])
+    id_list = []
+    for id in initial_item[id_field]:
+        id_list.append(ObjectId(id))
+    items = []
+    cursor = secondary_collection.find({"_id": { "$in": id_list }})
+    async for item in cursor:
+        items.append(responseid_handler(item))
+    return items
+
 async def addOne(collection, data):
     item = await collection.insert_one(data)
     new_item = await collection.find_one({"_id": item.inserted_id})
