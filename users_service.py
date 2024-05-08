@@ -4,7 +4,7 @@ from fastapi.encoders import jsonable_encoder
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
-                     getAll, getOne, responseid_handler, updateOne)
+                     getAll, getOne, responseid_handler, updateOne, getFromIDList)
 from models import LoginUser, User
 
 # MongoDB connection URL
@@ -39,12 +39,17 @@ async def create_user(user: User):
     response = await addOne(users_collection, user.model_dump())
     return ResponseModel(response, "User was created")
 
-@UserRouter.get("/find-user-by-id/{user_id}")
+@UserRouter.get("/id/{user_id}")
 async def read_item(user_id: str):
     item = await getOne(users_collection, user_id)
     if item:
         return ResponseModel(item, "Found user")
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
+
+@UserRouter.get("/id/{user_id}/posts")
+async def get_all_posts_from_user(user_id: str):
+    posts = await getFromIDList(users_collection, "_id", user_id, "posts_id", database["posts"])
+    return ResponseModel(posts, f"All posts from user {user_id}")
 
 @UserRouter.put("/update-user/{user_id}")
 async def update_item(user_id: str, user: User):

@@ -35,8 +35,12 @@ async def getOne(collection, id):
         return responseid_handler(item)
 
 async def getFromIDList(initial_collection, key, value, id_field, secondary_collection):
+    if key == "_id":
+        value = ObjectId(value)
     initial_item = await initial_collection.find_one({key:value}, projection=[id_field])
     id_list = []
+    if initial_item == None:
+        return []
     for id in initial_item[id_field]:
         id_list.append(ObjectId(id))
     items = []
