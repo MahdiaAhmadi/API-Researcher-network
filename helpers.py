@@ -57,6 +57,15 @@ async def deleteOne(collection, id):
         await collection.delete_one({"_id": ObjectId(id)})
         return True
 
+# All search functions must have a max length to avoid buffering an unlimited number of documents
+async def fuzzySearch(collection, key, value, maxLength=50):
+    items = []
+    cursor = collection.find({key:{'$regex': value , '$options': 'i'}}).limit(maxLength)
+    async for item in cursor:
+        items.append(responseid_handler(item))
+    if maxLength == 1:
+        return items[0]
+    return items
 
 def ResponseModel(data, message):
     return {
