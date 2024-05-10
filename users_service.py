@@ -4,8 +4,9 @@ from fastapi.encoders import jsonable_encoder
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
-                     getAll, getOne, responseid_handler, updateOne, getFromIDList)
-from models import LoginUser, User
+                     getAll, getFromIDList, getOne, responseid_handler,
+                     updateOne)
+from models import AccountCreate, LoginUser, User
 
 # MongoDB connection URL
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
@@ -18,7 +19,8 @@ UserRouter = APIRouter()
 
 @UserRouter.post("/login")
 async def get_login(credentials:LoginUser):
-    user = await login(credentials.username, credentials.password)
+    user = await login(credentials.username, credentials.password)    
+    print(credentials)
     if(user is None):
         return ErrorResponseModel("Unauthenticated", 401, "User not authenticated")
     return ResponseModel(user, "Logged User")
@@ -35,7 +37,7 @@ async def list_usertype():
     return ResponseModel(documents, "List of all available user types")
 
 @UserRouter.post("/create-user")
-async def create_user(user: User):
+async def create_user(user: AccountCreate):
     response = await addOne(users_collection, user.model_dump())
     return ResponseModel(response, "User was created")
 
