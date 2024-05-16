@@ -1,5 +1,6 @@
 from bson.objectid import ObjectId
 
+
 def responseid_handler(response):
     sanitized_resp = {}
     for k,v in response.items():
@@ -26,10 +27,27 @@ async def getAll(collection):
         items.append(responseid_handler(item))
     return items
 
+
+
 async def getOne(collection, id):
     item = await collection.find_one({"_id": ObjectId(id)})
     if item:
         return responseid_handler(item)
+
+async def getFromIDList(initial_collection, key, value, id_field, secondary_collection):
+    if key == "_id":
+        value = ObjectId(value)
+    initial_item = await initial_collection.find_one({key:value}, projection=[id_field])
+    id_list = []
+    if initial_item == None:
+        return []
+    for id in initial_item[id_field]:
+        id_list.append(ObjectId(id))
+    items = []
+    cursor = secondary_collection.find({"_id": { "$in": id_list }})
+    async for item in cursor:
+        items.append(responseid_handler(item))
+    return items
 
 async def addOne(collection, data):
     item = await collection.insert_one(data)
@@ -54,10 +72,19 @@ async def deleteOne(collection, id):
         await collection.delete_one({"_id": ObjectId(id)})
         return True
 
+# All search functions must have a max length to avoid buffering an unlimited number of documents
+async def fuzzySearch(collection, key, value, maxLength=50):
+    items = []
+    cursor = collection.find({key:{'$regex': value , '$options': 'i'}}).limit(maxLength)
+    async for item in cursor:
+        items.append(responseid_handler(item))
+    if maxLength == 1:
+        return items[0]
+    return items
 
 def ResponseModel(data, message):
     return {
-        "data": [data],
+        "data": data,
         "code": 200,
         "message": message,
     }

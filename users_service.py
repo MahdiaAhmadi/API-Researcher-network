@@ -1,10 +1,12 @@
-from helpers import ErrorResponseModel, ResponseModel, addOne, deleteOne, getAll, getOne, updateOne
-from motor.motor_asyncio import AsyncIOMotorClient
 from bson.objectid import ObjectId
 from fastapi import APIRouter, Body
 from fastapi.encoders import jsonable_encoder
+from motor.motor_asyncio import AsyncIOMotorClient
 
-from models import User, UpdateUserModel
+from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
+                     getAll, getFromIDList, getOne, responseid_handler,
+                     updateOne)
+from models import AccountCreate, LoginUser, User
 
 # MongoDB connection URL
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
@@ -14,6 +16,14 @@ users_collection = database["users"]
 usertype_collection = database["user_type"]
 
 UserRouter = APIRouter()
+
+@UserRouter.post("/login")
+async def get_login(credentials:LoginUser):
+    user = await login(credentials.username, credentials.password)    
+    print(credentials)
+    if(user is None):
+        return ErrorResponseModel("Unauthenticated", 401, "User not authenticated")
+    return ResponseModel(user, "Logged User")
 
 @UserRouter.get("/users-list")
 async def list_users():
@@ -27,16 +37,21 @@ async def list_usertype():
     return ResponseModel(documents, "List of all available user types")
 
 @UserRouter.post("/create-user")
-async def create_user(user: User):
+async def create_user(user: AccountCreate):
     response = await addOne(users_collection, user.model_dump())
     return ResponseModel(response, "User was created")
 
-@UserRouter.get("/find-user-by-id/{user_id}")
+@UserRouter.get("/id/{user_id}")
 async def read_item(user_id: str):
     item = await getOne(users_collection, user_id)
     if item:
         return ResponseModel(item, "Found user")
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
+
+@UserRouter.get("/id/{user_id}/posts")
+async def get_all_posts_from_user(user_id: str):
+    posts = await getFromIDList(users_collection, "_id", user_id, "posts_id", database["posts"])
+    return ResponseModel(posts, f"All posts from user {user_id}")
 
 @UserRouter.put("/update-user/{user_id}")
 async def update_item(user_id: str, user: User):
@@ -51,3 +66,10 @@ async def delete_user(user_id: str):
     if deleted_user:
         return ResponseModel({"id": user_id}, "User sucessfully deleted")
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
+
+
+async def login(username, password):
+    user = await users_collection.find_one({"username": username, "password":password})
+    if user:
+        return responseid_handler(user)
+    return None
