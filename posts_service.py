@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from motor.motor_asyncio import AsyncIOMotorClient
 
+import users_service
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      fuzzySearch, getAll, getOne, updateOne)
 from models import Post
@@ -36,8 +37,9 @@ async def update_item(post_id: str, post: Post):
         return ResponseModel({"id": post_id}, "Post sucessfully updated")
     return ErrorResponseModel("Error occurred", 404, "post does not exist")
 
-@PostRouter.put("/like/{post_id}")
-async def update_item(post_id: str):
+@PostRouter.put("/like/{user_id}/{post_id}")
+async def update_item(user_id: str, post_id: str):
+    await users_service.save_liked_post(user_id=user_id, post_id=post_id)
     post:dict = await getOne(posts_collection, post_id)
     post["likes"] += 1
     updated_post = await updateOne(posts_collection, post_id,post)

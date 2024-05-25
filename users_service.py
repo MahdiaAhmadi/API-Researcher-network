@@ -82,3 +82,16 @@ async def login(username, password):
 async def get_default_user_type():
     user_type = await usertype_collection.find_one({"code":3})
     return responseid_handler(user_type) 
+
+async def save_liked_post(user_id:str, post_id:str):
+    user:dict = await getOne(users_collection, user_id)
+    print(user)
+    try:
+        if post_id not in user["liked_posts_id"]:
+            user["liked_posts_id"].append(post_id)
+        else:
+            user["liked_posts_id"].remove(post_id)
+    except:
+        user["liked_posts_id"] = [post_id]
+    finally:
+        await updateOne(users_collection, user_id, user)
