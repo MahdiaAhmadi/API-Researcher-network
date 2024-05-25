@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      getAll, getFromIDList, getOne, responseid_handler,
                      updateOne)
-from models import AccountCreate, LoginUser, User
+from models import AccountCreate, LoginUser, User, UserType
 
 # MongoDB connection URL
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
@@ -37,8 +37,13 @@ async def list_usertype():
     return ResponseModel(documents, "List of all available user types")
 
 @UserRouter.post("/create-user")
-async def create_user(user: AccountCreate):
-    response = await addOne(users_collection, user.model_dump())
+async def create_user(create_user: AccountCreate):
+    user:dict = create_user.model_dump()
+    print(user)
+    default_type = await get_default_user_type()
+    print(default_type)
+    user["user_type"] = default_type
+    response = await addOne(users_collection, user)
     return ResponseModel(response, "User was created")
 
 @UserRouter.get("/id/{user_id}")
@@ -73,3 +78,7 @@ async def login(username, password):
     if user:
         return responseid_handler(user)
     return None
+
+async def get_default_user_type():
+    user_type = await usertype_collection.find_one({"code":3})
+    return responseid_handler(user_type) 

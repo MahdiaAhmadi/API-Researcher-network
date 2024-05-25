@@ -1,8 +1,9 @@
-from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi import APIRouter
+from motor.motor_asyncio import AsyncIOMotorClient
 
+from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
+                     fuzzySearch, getAll, getOne, updateOne)
 from models import Post
-from helpers import ErrorResponseModel, ResponseModel, addOne, deleteOne, getAll, getOne, updateOne, fuzzySearch
 
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 client = AsyncIOMotorClient(MONGO_URL)
@@ -31,6 +32,15 @@ async def read_item(post_id: str):
 @PostRouter.put("/id/{post_id}")
 async def update_item(post_id: str, post: Post):
     updated_post = await updateOne(posts_collection, post_id, post.model_dump())
+    if updated_post:
+        return ResponseModel({"id": post_id}, "Post sucessfully updated")
+    return ErrorResponseModel("Error occurred", 404, "post does not exist")
+
+@PostRouter.put("/like/{post_id}")
+async def update_item(post_id: str):
+    post:dict = await getOne(posts_collection, post_id)
+    post["likes"] += 1
+    updated_post = await updateOne(posts_collection, post_id,post)
     if updated_post:
         return ResponseModel({"id": post_id}, "Post sucessfully updated")
     return ErrorResponseModel("Error occurred", 404, "post does not exist")
