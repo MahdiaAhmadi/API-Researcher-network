@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 from motor.motor_asyncio import AsyncIOMotorClient
+from datetime import datetime
+
 
 import users_service
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
@@ -20,7 +22,10 @@ async def list_posts():
 
 @PostRouter.post("/")
 async def create_post(post: Post):
-    response = await addOne(posts_collection, post.model_dump())
+    created_at = datetime.combine(post.created_at, datetime.min.time())
+    post_dict = post.model_dump(by_alias=True)
+    post_dict["created_at"] = created_at
+    response = await addOne(posts_collection, post_dict)
     return ResponseModel(response, "Post was created")
 
 @PostRouter.get("/id/{post_id}")
