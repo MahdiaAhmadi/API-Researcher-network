@@ -3,13 +3,14 @@ from bson.objectid import ObjectId
 from fastapi import APIRouter, Body
 from fastapi.encoders import jsonable_encoder
 
+from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
+                     getAll, getOne, updateOne)
 from models import Institution, UpdateInstitutionModel
-from helpers import ResponseModel, ErrorResponseModel, addOne, deleteOne, getAll, getOne, updateOne
 
 MONGO_DETAILS = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_DETAILS)
 database = client.research_network
-institution_collection = database.get_collection("institutions")
+institution_collection = database.get_collection("colleges")
 
 InstitutionRouter = APIRouter()
 @InstitutionRouter.post("/", response_description="Institution added to database")

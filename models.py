@@ -15,7 +15,6 @@ class UpdateInstitutionModel(BaseModel):
     homepage: Optional[str] = Field(...)
 
 class UserType(BaseModel):
-    _id: str
     code: int = Field(...)
     type: str = Field(...)
 
@@ -28,7 +27,7 @@ class AccountCreate(BaseModel):
     email: str = Field(...)
     username: str = Field(...)
     password: str = Field(...)
-    user_type_id: str = Field(...)
+    institution_id: str = Field(...)
     birth_date: str = Field(...)
 
 class User(BaseModel): 
@@ -37,9 +36,9 @@ class User(BaseModel):
     username: str = Field(...)
     password: str = Field(...)
     profile_description: Optional[str] = Field(...)
-    user_type_id: str = Field(...)
-    institution_id: Optional[str] = Field(...)
-    birth_date: date = Field(...)
+    user_type: Optional[UserType]  = Field(...)
+    institution_id: str = Field(...)
+    birth_date: str = Field(...)
     posts_id: Optional[List[str]] = Field(...)
     comments_id: Optional[List[str]] = Field(...)
     liked_posts_id:Optional[List[str]] = Field(...)
@@ -50,9 +49,9 @@ class UpdateUserModel(BaseModel):
     display_name: Optional[str] = Field(...)
     username: Optional[str] = Field(...)
     password: Optional[str] = Field(...)
-    user_type_id: Optional[str] = Field(...)
+    user_type: Optional[UserType] = Field(...)
     institution_id: Optional[str] = Field(...)
-    birth_date: Optional[date] = Field(...)
+    birth_date: Optional[str] = Field(...)
     posts_id: Optional[List[str]] = Field(...)
     comments_id: Optional[List[str]]  = Field(...)
     liked_posts_id: Optional[List[str]]  = Field(...)
@@ -62,6 +61,7 @@ class UpdateUserModel(BaseModel):
 class Post(BaseModel):
     title:str = Field(...)
     categories_id: List[str] = Field(...) 
+    likes:int = Field(...)
     author_id: str = Field(...) 
     summary: str = Field(...)
     content: str = Field(...) 
@@ -71,12 +71,12 @@ class Post(BaseModel):
     file_path: str = Field(...)
     created_at : date = Field(...)
 
+
 class Category(BaseModel):
     name:str = Field(...)
     posts_id: List[str] = Field(...)
 
 class CommentList(BaseModel):
-    _id: str
     author_id : str = Field(...)
     post_id : str = Field(...)
     parent_comment_id: Optional[str] = Field(...)
