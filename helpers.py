@@ -27,6 +27,12 @@ async def getAll(collection):
         items.append(responseid_handler(item))
     return items
 
+async def get_by_idlist(collection, id_list):
+    items = []
+    i =  collection.find({"_id": { "$in": [ObjectId(id) for id in id_list] }})
+    async for item in i:
+        items.append(responseid_handler(item))
+    return items
 
 
 async def getOne(collection, id):

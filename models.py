@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -69,7 +69,7 @@ class Post(BaseModel):
     research_link: str = Field(...)
     visibility : int = Field(...)
     file_path: str = Field(...)
-    created_at : date = Field(...)
+    created_at : datetime  = datetime.now()
 
 
 class Category(BaseModel):
@@ -81,14 +81,14 @@ class CommentList(BaseModel):
     post_id : str = Field(...)
     parent_comment_id: Optional[str] = Field(...)
     content : str = Field(...)
-    created_at : date = Field(...) 
+    created_at : datetime  = datetime.now()
 
 class CommentCreate(BaseModel):
     author_id : str = Field(...)
     post_id : str = Field(...)
     parent_comment_id: Optional[str] = Field(...)
     content : str = Field(...)
-    created_at : date = Field(...) 
+    created_at : datetime  = datetime.now()
 
 
 
