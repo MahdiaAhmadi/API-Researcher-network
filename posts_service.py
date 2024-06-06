@@ -1,7 +1,7 @@
-from fastapi import APIRouter
-from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 
+from fastapi import APIRouter
+from motor.motor_asyncio import AsyncIOMotorClient
 
 import users_service
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
@@ -23,8 +23,16 @@ async def list_posts():
     for post in documents:
         categories = await get_by_idlist(categories_collection, post["categories_id"])
         post["categories"] = categories
-        print(categories)
+
     return ResponseModel(documents, "List of all posts")
+
+@PostRouter.get("/user-posts/{user_id}")
+async def user_posts(user_id:str):
+    posts = await fuzzySearch(posts_collection, "author_id", user_id)
+    for post in posts:
+        categories = await get_by_idlist(categories_collection, post["categories_id"])
+        post["categories"] = categories
+    return ResponseModel(posts, "List of user posts")
 
 @PostRouter.post("/")
 async def create_post(post: Post):
