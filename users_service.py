@@ -28,7 +28,7 @@ async def get_secure_login(credentials: Annotated[OAuth2PasswordRequestForm, Dep
         return ErrorResponseModel("Unauthenticated", 401, "User not authenticated")
     print(user)
     access_token = create_access_token(user["id"])
-    return Token(username=user["username"], email=user["email"], display_name=user["display_name"], access_token=access_token, token_type="bearer")
+    return Token(userId=user["id"],username=user["username"], email=user["email"], display_name=user["display_name"], access_token=access_token, token_type="bearer")
 
 
 
@@ -130,7 +130,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 @UserRouter.get("/me")
 async def read_users_me( current_user: Annotated[User, Depends(get_current_user)]):
     print(current_user)
-    return current_user
+    return ResponseModel(current_user, "Current Logged User")
 
 @UserRouter.get("/me/posts")
 async def get_all_posts_from_me(token: Annotated[str, Depends(oauth2_scheme)]):

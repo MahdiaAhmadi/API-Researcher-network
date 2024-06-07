@@ -11,6 +11,7 @@ SECRET_KEY = "198fbe5f5dee8a085d8c212a3531c2c20a07fd53407d97ec32b8102c32978293"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 class Token(BaseModel):
+    userId: str
     username: str
     email: str
     display_name: str
