@@ -1,22 +1,24 @@
 from datetime import datetime, timedelta, timezone
-from fastapi.security import OAuth2PasswordBearer
-from fastapi import HTTPException, status, Depends, FastAPI
+
 import jwt
+from fastapi import HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel
-from typing import Annotated
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="user/token")
 SECRET_KEY = "198fbe5f5dee8a085d8c212a3531c2c20a07fd53407d97ec32b8102c32978293"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+CREDENTIALS_EXCEPTION = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
 class Token(BaseModel):
-    userId: str
-    username: str
-    email: str
-    display_name: str
     access_token: str
-    token_type: str
 
 def create_access_token(id: str):
     to_encode = { "sub": id }
@@ -25,6 +27,7 @@ def create_access_token(id: str):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 def decode_access_token(token: str):
     try:
@@ -37,3 +40,5 @@ def decode_access_token(token: str):
         return userid
     except InvalidTokenError:
         return None
+    
+    

@@ -1,22 +1,40 @@
 from bson.objectid import ObjectId
-from fastapi import APIRouter, Body, HTTPException, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
-from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.security import OAuth2PasswordRequestForm
-from auth import create_access_token, decode_access_token, oauth2_scheme, Token
-from typing import Annotated
+from motor.motor_asyncio import AsyncIOMotorClient
+from typing_extensions import Annotated
 
+from auth import (CREDENTIALS_EXCEPTION, Token, create_access_token,
+                  decode_access_token, oauth2_scheme)
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      getAll, getFromIDList, getOne, responseid_handler,
                      updateOne)
 from models import AccountCreate, LoginUser, User, UserType
 
-# MongoDB connection URL
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 client = AsyncIOMotorClient(MONGO_URL)
 database = client["research_network"]
 users_collection = database["users"]
 usertype_collection = database["user_type"]
+
+async def get_current_user(req: Request):
+    token = req.headers["Authorization"]
+    print(token)
+    user_id = decode_access_token(token)
+    if user_id is None:
+        raise CREDENTIALS_EXCEPTION
+    item = await getOne(users_collection, user_id)
+    if item is None:
+        raise CREDENTIALS_EXCEPTION
+    return item
+
+def verify_token(req: Request):
+    token = req.headers["Authorization"]
+    user_id = decode_access_token(token)
+    if user_id is None:
+        raise CREDENTIALS_EXCEPTION
+    return True
 
 UserRouter = APIRouter()
 
@@ -26,9 +44,8 @@ async def get_secure_login(credentials: Annotated[OAuth2PasswordRequestForm, Dep
     print(credentials)
     if(user is None):
         return ErrorResponseModel("Unauthenticated", 401, "User not authenticated")
-    print(user)
     access_token = create_access_token(user["id"])
-    return Token(userId=user["id"],username=user["username"], email=user["email"], display_name=user["display_name"], access_token=access_token, token_type="bearer")
+    return Token(access_token=access_token)
 
 
 
@@ -39,6 +56,11 @@ async def get_login(credentials:LoginUser):
     if(user is None):
         return ErrorResponseModel("Unauthenticated", 401, "User not authenticated")
     return ResponseModel(user, "Logged User")
+
+
+@UserRouter.get("/by-token")
+async def get_login(current_user: User =  Depends(get_current_user)):
+    return ResponseModel(current_user, "Current Logged User")
 
 @UserRouter.get("/users-list")
 async def list_users():
@@ -111,21 +133,7 @@ async def save_liked_post(user_id:str, post_id:str):
     finally:
         await updateOne(users_collection, user_id, user)
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    print(token)
-    user_id = decode_access_token(token)
-    print(user_id)
-    if user_id is None:
-        raise credentials_exception
-    item = await getOne(users_collection, user_id)
-    if item is None:
-        raise credentials_exception
-    return item
+
 
 @UserRouter.get("/me")
 async def read_users_me( current_user: Annotated[User, Depends(get_current_user)]):
