@@ -22,6 +22,7 @@ class LoginUser(BaseModel):
     username: str 
     password: str 
 
+
 class AccountCreate(BaseModel):
     display_name: str = Field(...)
     email: str = Field(...)

@@ -62,6 +62,15 @@ async def get_login(credentials:LoginUser):
 async def get_login(current_user: User =  Depends(get_current_user)):
     return ResponseModel(current_user, "Current Logged User")
 
+@UserRouter.put("/change-password")
+async def get_login(newPassword:str,current_user: User =  Depends(get_current_user)):
+    user = current_user
+    user["password"]= newPassword
+    updated_user = await updateOne(users_collection, current_user["id"], user)
+    if updated_user:
+        return ResponseModel({"id": current_user["id"]}, "Paswword Changed")
+    return ErrorResponseModel("Error occurred", 404, "user does not exist")
+
 @UserRouter.get("/users-list")
 async def list_users():
     documents = await getAll(users_collection)
