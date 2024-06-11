@@ -118,6 +118,28 @@ async def delete_user(user_id: str):
         return ResponseModel({"id": user_id}, "User sucessfully deleted")
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
 
+@UserRouter.post("/follow-user/{author_id}")
+async def create_user(author_id: str, current_user: User =  Depends(get_current_user)):
+    user:dict = current_user
+    follwed_user:dict = await getOne(users_collection, author_id)
+
+    try:
+        if author_id not in user["follows_id"]:
+            user["follows_id"].append(author_id)
+    except:
+         user["follows_id"] = [author_id]
+    try:
+        if current_user["id"] not in follwed_user["followers_id"]:
+            follwed_user["followers_id"].append(current_user["id"])
+    except:
+         follwed_user["followers_id"] = [current_user["id"]]
+    
+    updated_follwed = await updateOne(users_collection, author_id, follwed_user)
+    updated_user = await updateOne(users_collection, current_user["id"], user)
+    if updated_user and updated_follwed:
+        return ResponseModel({"id": current_user["id"]}, "User followed")
+    return ErrorResponseModel("Error occurred", 404, "user does not exist")
+
 
 async def login(username, password):
     user = await users_collection.find_one({"username": username, "password":password})
