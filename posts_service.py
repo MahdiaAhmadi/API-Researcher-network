@@ -43,8 +43,8 @@ async def create_post(post: Post, authorized: bool =  Depends(users_service.veri
         return ResponseModel(response, "Post was created")
 
 @PostRouter.get("/id/{post_id}")
-async def read_item(post_id: str, authorized: bool =  Depends(users_service.verify_token)):
-    if(authorized):
+async def read_item(post_id: str):
+   
         item = await getOne(posts_collection, post_id)
         if item:
             return ResponseModel(item, "Found post")
@@ -69,8 +69,8 @@ async def update_item(post_id: str, current_user: User = Depends(users_service.g
     return ErrorResponseModel("Error occurred", 404, "post does not exist")
 
 @PostRouter.delete("/id/{post_id}")
-async def delete_post(post_id: str, authorized: bool =  Depends(users_service.verify_token)):
-    if(authorized):
+async def delete_post(post_id: str):
+    
         deleted_post = await deleteOne(posts_collection, post_id)
         if deleted_post:
             return ResponseModel({"id": post_id}, "Post sucessfully deleted")

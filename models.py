@@ -87,9 +87,9 @@ class CommentList(BaseModel):
 class CommentCreate(BaseModel):
     author_id : str = Field(...)
     post_id : str = Field(...)
-    parent_comment_id: Optional[str] = Field(...)
+    parent_comment_id: str | None = None
     content : str = Field(...)
-    created_at : datetime  = datetime.now()
+    created_at : datetime | None = datetime.now()
 
 
 
