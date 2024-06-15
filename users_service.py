@@ -10,7 +10,7 @@ from auth import (CREDENTIALS_EXCEPTION, Token, create_access_token,
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      getAll, getFromIDList, getOne, responseid_handler,
                      updateOne)
-from models import AccountCreate, LoginUser, User, UserType
+from models import AccountCreate, LoginUser, UpdateUserModel, User, UserType
 
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 client = AsyncIOMotorClient(MONGO_URL)
@@ -89,7 +89,9 @@ async def create_user(create_user: AccountCreate):
     default_type = await get_default_user_type()
     print(default_type)
     user["user_type"] = default_type
-    response = await addOne(users_collection, user)
+    userModel = User(**user)
+    print(userModel)
+    response = await addOne(users_collection, userModel.model_dump())
     return ResponseModel(response, "User was created")
 
 @UserRouter.get("/id/{user_id}")
@@ -172,7 +174,17 @@ async def read_users_me( current_user: Annotated[User, Depends(get_current_user)
     return ResponseModel(current_user, "Current Logged User")
 
 @UserRouter.get("/me/posts")
-async def get_all_posts_from_me(token: Annotated[str, Depends(oauth2_scheme)]):
-    user_id = decode_access_token(token)
+async def get_all_posts_from_me(current_user: Annotated[User, Depends(get_current_user)]):
+    user_id = current_user["id"]
     posts = await getFromIDList(users_collection, "_id", user_id, "posts_id", database["posts"])
     return ResponseModel(posts, f"All posts from user {user_id}")
+
+@UserRouter.put("/me/update")
+async def update_me(user: UpdateUserModel, current_user: Annotated[User, Depends(get_current_user)]):
+    # user_id = decode_access_token(token)
+    user_id = current_user["id"]
+    print("updating")
+    updated_user = await updateOne(users_collection, user_id, user.model_dump(exclude_unset=True))
+    if updated_user:
+        return ResponseModel({"id": user_id}, "User sucessfully updated")
+    return ErrorResponseModel("Error occurred", 404, "user does not exist")
