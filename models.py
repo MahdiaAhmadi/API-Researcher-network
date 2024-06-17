@@ -11,8 +11,8 @@ class Institution(BaseModel):
     members : List[str] = Field(...)  
 
 class UpdateInstitutionModel(BaseModel):
-    name: Optional[str] = Field(...)
-    homepage: Optional[str] = Field(...)
+    name: Optional[str] = Field(None)
+    homepage: Optional[str] = Field(None)
 
 class UserType(BaseModel):
     code: int = Field(...)
@@ -21,6 +21,7 @@ class UserType(BaseModel):
 class LoginUser(BaseModel):
     username: str 
     password: str 
+
 
 class AccountCreate(BaseModel):
     display_name: str = Field(...)
@@ -35,28 +36,31 @@ class User(BaseModel):
     email: str = Field(...)
     username: str = Field(...)
     password: str = Field(...)
-    profile_description: Optional[str] = Field(...)
-    user_type: Optional[UserType]  = Field(...)
+    profile_description: Optional[str] = Field(default="")
+    skills: Optional[List[str]] = Field(default=[])
+    user_type: UserType  = Field(...)
     institution_id: str = Field(...)
     birth_date: str = Field(...)
-    posts_id: Optional[List[str]] = Field(...)
-    comments_id: Optional[List[str]] = Field(...)
-    liked_posts_id:Optional[List[str]] = Field(...)
-    follows_id :Optional[List[str]] = Field(...)
-    followers_id : Optional[List[str]]  = Field(...)
+    posts_id: Optional[List[str]] = Field(default=[])
+    comments_id: Optional[List[str]] = Field(default=[])
+    liked_posts_id:Optional[List[str]] = Field(default=[])
+    follows_id :Optional[List[str]] = Field(default=[])
+    followers_id : Optional[List[str]]  = Field(default=[])
 
 class UpdateUserModel(BaseModel): 
-    display_name: Optional[str] = Field(...)
-    username: Optional[str] = Field(...)
-    password: Optional[str] = Field(...)
-    user_type: Optional[UserType] = Field(...)
-    institution_id: Optional[str] = Field(...)
-    birth_date: Optional[str] = Field(...)
-    posts_id: Optional[List[str]] = Field(...)
-    comments_id: Optional[List[str]]  = Field(...)
-    liked_posts_id: Optional[List[str]]  = Field(...)
-    follows_id :Optional[List[str]]  = Field(...)
-    followers_id : Optional[List[str]]   = Field(...)
+    display_name: Optional[str] = Field(None)
+    username: Optional[str] = Field(None)
+    password: Optional[str] = Field(None)
+    user_type: Optional[UserType] = Field(None)
+    profile_description: Optional[str] = Field(None)
+    skills: Optional[List[str]] = Field(None)
+    institution_id: Optional[str] = Field(None)
+    birth_date: Optional[str] = Field(None)
+    posts_id: Optional[List[str]] = Field(None)
+    comments_id: Optional[List[str]]  = Field(None)
+    liked_posts_id: Optional[List[str]]  = Field(None)
+    follows_id :Optional[List[str]]  = Field(None)
+    followers_id : Optional[List[str]]   = Field(None)
 
 class Post(BaseModel):
     title:str = Field(...)
@@ -79,16 +83,16 @@ class Category(BaseModel):
 class CommentList(BaseModel):
     author_id : str = Field(...)
     post_id : str = Field(...)
-    parent_comment_id: Optional[str] = Field(...)
+    parent_comment_id: Optional[str] = Field(None)
     content : str = Field(...)
     created_at : datetime  = datetime.now()
 
 class CommentCreate(BaseModel):
     author_id : str = Field(...)
     post_id : str = Field(...)
-    parent_comment_id: Optional[str] = Field(...)
+    parent_comment_id: str | None = None
     content : str = Field(...)
-    created_at : datetime  = datetime.now()
+    created_at : datetime | None = datetime.now()
 
 
 

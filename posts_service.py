@@ -1,7 +1,7 @@
-from fastapi import APIRouter
-from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 
+from fastapi import APIRouter, Depends
+from motor.motor_asyncio import AsyncIOMotorClient
 
 import users_service
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
@@ -18,39 +18,49 @@ categories_collection = database["categories"]
 PostRouter = APIRouter()
 
 @PostRouter.get("/")
-async def list_posts():
-    documents = await getAll(posts_collection)
-    for post in documents:
+async def list_posts(authorized: bool =  Depends(users_service.verify_token)):
+    if(authorized):
+        documents = await getAll(posts_collection)
+        for post in documents:
+            categories = await get_by_idlist(categories_collection, post["categories_id"])
+            post["categories"] = categories
+
+        return ResponseModel(documents, "List of all posts")
+
+@PostRouter.get("/user-posts")
+async def user_posts(current_user: User = Depends(users_service.get_current_user)):
+    posts = await fuzzySearch(posts_collection, "author_id", current_user["id"])
+    for post in posts:
         categories = await get_by_idlist(categories_collection, post["categories_id"])
         post["categories"] = categories
-        print(categories)
-    return ResponseModel(documents, "List of all posts")
+    return ResponseModel(posts, "List of user posts")
 
 @PostRouter.post("/")
-async def create_post(post: Post):
-    created_at = datetime.combine(post.created_at, datetime.min.time())
-    post_dict = post.model_dump(by_alias=True)
-    post_dict["created_at"] = created_at
-    response = await addOne(posts_collection, post_dict)
-    return ResponseModel(response, "Post was created")
+async def create_post(post: Post, authorized: bool =  Depends(users_service.verify_token)):
+    if(authorized):
+        post_dict = post.model_dump(by_alias=True)
+        response = await addOne(posts_collection, post_dict)
+        return ResponseModel(response, "Post was created")
 
 @PostRouter.get("/id/{post_id}")
 async def read_item(post_id: str):
-    item = await getOne(posts_collection, post_id)
-    if item:
-        return ResponseModel(item, "Found post")
-    return ErrorResponseModel("Error occurred", 404, "post does not exist")
+   
+        item = await getOne(posts_collection, post_id)
+        if item:
+            return ResponseModel(item, "Found post")
+        return ErrorResponseModel("Error occurred", 404, "post does not exist")
 
 @PostRouter.put("/id/{post_id}")
-async def update_item(post_id: str, post: Post):
-    updated_post = await updateOne(posts_collection, post_id, post.model_dump())
-    if updated_post:
-        return ResponseModel({"id": post_id}, "Post sucessfully updated")
-    return ErrorResponseModel("Error occurred", 404, "post does not exist")
+async def update_item(post_id: str, post: Post, authorized: bool =  Depends(users_service.verify_token)):
+    if(authorized):
+        updated_post = await updateOne(posts_collection, post_id, post.model_dump())
+        if updated_post:
+            return ResponseModel({"id": post_id}, "Post sucessfully updated")
+        return ErrorResponseModel("Error occurred", 404, "post does not exist")
 
-@PostRouter.put("/like/{user_id}/{post_id}")
-async def update_item(user_id: str, post_id: str):
-    await users_service.save_liked_post(user_id=user_id, post_id=post_id)
+@PostRouter.put("/like/{post_id}")
+async def update_item(post_id: str, current_user: User = Depends(users_service.get_current_user)):
+    await users_service.save_liked_post(user_id= current_user["id"], post_id=post_id)
     post:dict = await getOne(posts_collection, post_id)
     post["likes"] += 1
     updated_post = await updateOne(posts_collection, post_id,post)
@@ -60,10 +70,11 @@ async def update_item(user_id: str, post_id: str):
 
 @PostRouter.delete("/id/{post_id}")
 async def delete_post(post_id: str):
-    deleted_post = await deleteOne(posts_collection, post_id)
-    if deleted_post:
-        return ResponseModel({"id": post_id}, "Post sucessfully deleted")
-    return ErrorResponseModel("Error occurred", 404, "post does not exist")
+    
+        deleted_post = await deleteOne(posts_collection, post_id)
+        if deleted_post:
+            return ResponseModel({"id": post_id}, "Post sucessfully deleted")
+        return ErrorResponseModel("Error occurred", 404, "post does not exist")
 
 @PostRouter.get("/by-title")
 async def find_by_name(title: str):

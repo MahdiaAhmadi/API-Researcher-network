@@ -1,21 +1,53 @@
 from bson.objectid import ObjectId
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
+from fastapi.security import OAuth2PasswordRequestForm
 from motor.motor_asyncio import AsyncIOMotorClient
+from typing_extensions import Annotated
 
+from auth import (CREDENTIALS_EXCEPTION, Token, create_access_token,
+                  decode_access_token, oauth2_scheme)
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      getAll, getFromIDList, getOne, responseid_handler,
                      updateOne)
-from models import AccountCreate, LoginUser, User, UserType
+from models import AccountCreate, LoginUser, UpdateUserModel, User, UserType
 
-# MongoDB connection URL
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 client = AsyncIOMotorClient(MONGO_URL)
 database = client["research_network"]
 users_collection = database["users"]
 usertype_collection = database["user_type"]
 
+async def get_current_user(req: Request):
+    token = req.headers["Authorization"]
+    print(token)
+    user_id = decode_access_token(token)
+    if user_id is None:
+        raise CREDENTIALS_EXCEPTION
+    item = await getOne(users_collection, user_id)
+    if item is None:
+        raise CREDENTIALS_EXCEPTION
+    return item
+
+def verify_token(req: Request):
+    token = req.headers["Authorization"]
+    user_id = decode_access_token(token)
+    if user_id is None:
+        raise CREDENTIALS_EXCEPTION
+    return True
+
 UserRouter = APIRouter()
+
+@UserRouter.post("/token")
+async def get_secure_login(credentials: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+    user = await login(credentials.username, credentials.password)
+    print(credentials)
+    if(user is None):
+        return ErrorResponseModel("Unauthenticated", 401, "User not authenticated")
+    access_token = create_access_token(user["id"])
+    return Token(access_token=access_token)
+
+
 
 @UserRouter.post("/login")
 async def get_login(credentials:LoginUser):
@@ -24,6 +56,20 @@ async def get_login(credentials:LoginUser):
     if(user is None):
         return ErrorResponseModel("Unauthenticated", 401, "User not authenticated")
     return ResponseModel(user, "Logged User")
+
+
+@UserRouter.get("/by-token")
+async def get_login(current_user: User =  Depends(get_current_user)):
+    return ResponseModel(current_user, "Current Logged User")
+
+@UserRouter.put("/change-password")
+async def get_login(newPassword:str,current_user: User =  Depends(get_current_user)):
+    user = current_user
+    user["password"]= newPassword
+    updated_user = await updateOne(users_collection, current_user["id"], user)
+    if updated_user:
+        return ResponseModel({"id": current_user["id"]}, "Paswword Changed")
+    return ErrorResponseModel("Error occurred", 404, "user does not exist")
 
 @UserRouter.get("/users-list")
 async def list_users():
@@ -43,7 +89,9 @@ async def create_user(create_user: AccountCreate):
     default_type = await get_default_user_type()
     print(default_type)
     user["user_type"] = default_type
-    response = await addOne(users_collection, user)
+    userModel = User(**user)
+    print(userModel)
+    response = await addOne(users_collection, userModel.model_dump())
     return ResponseModel(response, "User was created")
 
 @UserRouter.get("/id/{user_id}")
@@ -72,6 +120,28 @@ async def delete_user(user_id: str):
         return ResponseModel({"id": user_id}, "User sucessfully deleted")
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
 
+@UserRouter.post("/follow-user/{author_id}")
+async def create_user(author_id: str, current_user: User =  Depends(get_current_user)):
+    user:dict = current_user
+    follwed_user:dict = await getOne(users_collection, author_id)
+
+    try:
+        if author_id not in user["follows_id"]:
+            user["follows_id"].append(author_id)
+    except:
+         user["follows_id"] = [author_id]
+    try:
+        if current_user["id"] not in follwed_user["followers_id"]:
+            follwed_user["followers_id"].append(current_user["id"])
+    except:
+         follwed_user["followers_id"] = [current_user["id"]]
+    
+    updated_follwed = await updateOne(users_collection, author_id, follwed_user)
+    updated_user = await updateOne(users_collection, current_user["id"], user)
+    if updated_user and updated_follwed:
+        return ResponseModel({"id": current_user["id"]}, "User followed")
+    return ErrorResponseModel("Error occurred", 404, "user does not exist")
+
 
 async def login(username, password):
     user = await users_collection.find_one({"username": username, "password":password})
@@ -95,3 +165,26 @@ async def save_liked_post(user_id:str, post_id:str):
         user["liked_posts_id"] = [post_id]
     finally:
         await updateOne(users_collection, user_id, user)
+
+
+
+@UserRouter.get("/me")
+async def read_users_me( current_user: Annotated[User, Depends(get_current_user)]):
+    print(current_user)
+    return ResponseModel(current_user, "Current Logged User")
+
+@UserRouter.get("/me/posts")
+async def get_all_posts_from_me(current_user: Annotated[User, Depends(get_current_user)]):
+    user_id = current_user["id"]
+    posts = await getFromIDList(users_collection, "_id", user_id, "posts_id", database["posts"])
+    return ResponseModel(posts, f"All posts from user {user_id}")
+
+@UserRouter.put("/me/update")
+async def update_me(user: UpdateUserModel, current_user: Annotated[User, Depends(get_current_user)]):
+    # user_id = decode_access_token(token)
+    user_id = current_user["id"]
+    print("updating")
+    updated_user = await updateOne(users_collection, user_id, user.model_dump(exclude_unset=True))
+    if updated_user:
+        return ResponseModel({"id": user_id}, "User sucessfully updated")
+    return ErrorResponseModel("Error occurred", 404, "user does not exist")
