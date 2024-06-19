@@ -69,9 +69,8 @@ async def update_item(post_id: str, current_user: User = Depends(users_service.g
     return ErrorResponseModel("Error occurred", 404, "post does not exist")
 
 @PostRouter.delete("/id/{post_id}")
-async def delete_post(post_id: str):
-    
-        deleted_post = await deleteOne(posts_collection, post_id)
+async def delete_post(post_id: str, admin: User = Depends(users_service.is_admin)):
+        deleted_post = await updateOne(posts_collection, post_id, { "visibility":0 })
         if deleted_post:
             return ResponseModel({"id": post_id}, "Post sucessfully deleted")
         return ErrorResponseModel("Error occurred", 404, "post does not exist")

@@ -71,7 +71,8 @@ class Post(BaseModel):
     content: str = Field(...) 
     comments_id: List[str] = Field(...) 
     research_link: str = Field(...)
-    visibility : int = Field(...)
+    reports: int | None = 0
+    visibility : int = Field(...) # 0 for Deleted, 1 for Private, 2 for Visible
     file_path: str = Field(...)
     created_at : datetime  = datetime.now()
 
