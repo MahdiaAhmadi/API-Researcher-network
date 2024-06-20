@@ -29,11 +29,9 @@ async def get_current_user(req: Request):
         raise CREDENTIALS_EXCEPTION
     return item
 
-async def is_admin(current_user: User = Depends(get_current_user)):
+def is_admin(current_user: User):
     creds = current_user.user_type
-    if creds.code == 1 and creds.type == "admin":
-        return current_user
-    raise CREDENTIALS_EXCEPTION
+    return creds.code == 1 and creds.type == "admin"
 
 def verify_token(req: Request):
     token = req.headers["Authorization"]

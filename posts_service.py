@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
+from auth import CREDENTIALS_EXCEPTION
 from fastapi import APIRouter, Depends, Body
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -26,7 +27,9 @@ async def list_posts(authorized: bool =  Depends(users_service.verify_token)):
             categories = await get_by_idlist(categories_collection, post["categories_id"])
             post["categories"] = categories
 
-        return ResponseModel(documents, "List of all posts")
+        visible_posts = list(filter(lambda p: p["visibility"] > 0, documents))
+        print(visible_posts)
+        return ResponseModel(visible_posts, "List of all posts")
 
 @PostRouter.get("/user-posts")
 async def user_posts(current_user: User = Depends(users_service.get_current_user)):
@@ -34,7 +37,9 @@ async def user_posts(current_user: User = Depends(users_service.get_current_user
     for post in posts:
         categories = await get_by_idlist(categories_collection, post["categories_id"])
         post["categories"] = categories
-    return ResponseModel(posts, "List of user posts")
+
+    visible_posts = list(filter(lambda p: p["visibility"] > 0, posts))
+    return ResponseModel(visible_posts, "List of user posts")
 
 @PostRouter.post("/")
 async def create_post(post: Post, authorized: bool =  Depends(users_service.verify_token)):
@@ -70,8 +75,12 @@ async def update_item(post_id: str, current_user: User = Depends(users_service.g
     return ErrorResponseModel("Error occurred", 404, "post does not exist")
 
 @PostRouter.delete("/id/{post_id}")
-async def delete_post(post_id: str, admin: User = Depends(users_service.is_admin)):
-        deleted_post = await updateOne(posts_collection, post_id, { "visibility":0 })
+async def delete_post(post_id: str, current_user: User = Depends(users_service.get_current_user)):
+        post:dict = await getOne(posts_collection, post_id)
+        if post["author_id"] == current_user.id or users_service.is_admin(current_user):
+            deleted_post = await updateOne(posts_collection, post_id, { "visibility":0})
+        else:
+            raise CREDENTIALS_EXCEPTION
         if deleted_post:
             return ResponseModel({"id": post_id}, "Post sucessfully deleted")
         return ErrorResponseModel("Error occurred", 404, "post does not exist")
