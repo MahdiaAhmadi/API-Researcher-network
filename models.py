@@ -82,6 +82,7 @@ class Category(BaseModel):
 
 class CommentList(BaseModel):
     author_id : str = Field(...)
+    author: Optional[User] = Field(...)
     post_id : str = Field(...)
     parent_comment_id: Optional[str] = Field(None)
     content : str = Field(...)
@@ -90,7 +91,6 @@ class CommentList(BaseModel):
 class CommentCreate(BaseModel):
     author_id : str = Field(...)
     post_id : str = Field(...)
-    parent_comment_id: Optional[str] 
     content : str = Field(...)
     created_at : datetime = datetime.now()
 
