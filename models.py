@@ -18,6 +18,10 @@ class UserType(BaseModel):
     code: int = Field(...)
     type: str = Field(...)
 
+class Report(BaseModel):
+    user_id: str = Field(...)
+    reason: str = Field(...)
+
 class LoginUser(BaseModel):
     username: str 
     password: str 
@@ -71,7 +75,7 @@ class Post(BaseModel):
     content: str = Field(...) 
     comments_id: List[str] = Field(...) 
     research_link: str = Field(...)
-    reports: int | None = 0
+    reports: Optional[List[Report]] = Field(default=[])
     visibility : int = Field(...) # 0 for Deleted, 1 for Private, 2 for Visible
     file_path: str = Field(...)
     created_at : datetime  = datetime.now()

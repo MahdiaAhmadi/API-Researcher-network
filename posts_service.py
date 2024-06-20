@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from motor.motor_asyncio import AsyncIOMotorClient
 
 import users_service
@@ -98,5 +99,15 @@ async def find_by_name(categoryName: str):
         posts = [*posts,*find]
     return ResponseModel(posts, "All posts")
 
-
-
+@PostRouter.post("/report-post")
+async def report_post(postId: Annotated[str, Body(embed=True)], reason: Annotated[str, Body(embed=True)], current_user: User = Depends(users_service.get_current_user)):
+    print("reporting")
+    report = {"user_id": current_user["id"], "reason":reason}
+    post:dict = await getOne(posts_collection, postId)
+    current_reports = post["reports"] if "reports" in post.keys() else []
+    for r in current_reports:
+        if report["user_id"] == r["user_id"]:
+            return ResponseModel(False, "Post already reported")
+    current_reports.append(report)
+    updated = await updateOne(posts_collection, postId, { "reports": current_reports })
+    return ResponseModel(updated, "Post was reported")
