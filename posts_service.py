@@ -58,7 +58,7 @@ async def read_item(post_id: str, authorized: bool =  Depends(users_service.veri
 
 
 @PostRouter.put("/id/{post_id}")
-async def update_item(post_id: str, post: Post, authorized: bool =  Depends(users_service.verify_token)):
+async def update_item(post_id: str, post: UpdatePost, authorized: bool =  Depends(users_service.verify_token)):
     if(authorized):
         updated_post = await updateOne(posts_collection, post_id, post.model_dump())
         if updated_post:

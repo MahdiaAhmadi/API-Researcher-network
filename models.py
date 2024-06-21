@@ -76,9 +76,9 @@ class Post(BaseModel):
     created_at : datetime  = datetime.now()
 
 class UpdatePost(BaseModel):
-    title: str
-    content: str
-    summary: str
+    title: str = Field(...)
+    content: str = Field(...)
+    summary: str = Field(...)
 
 
 class Category(BaseModel):
