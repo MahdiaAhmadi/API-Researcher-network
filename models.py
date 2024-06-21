@@ -75,6 +75,11 @@ class Post(BaseModel):
     file_path: str = Field(...)
     created_at : datetime  = datetime.now()
 
+class UpdatePost(BaseModel):
+    title: str
+    content: str
+    summary: str
+
 
 class Category(BaseModel):
     name:str = Field(...)

@@ -7,6 +7,9 @@ import users_service
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      fuzzySearch, get_by_idlist, getAll, getOne, updateOne)
 from models import Post, User
+from models import UpdatePost
+
+from bson.objectid import ObjectId
 
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 client = AsyncIOMotorClient(MONGO_URL)
@@ -50,13 +53,18 @@ async def read_item(post_id: str):
             return ResponseModel(item, "Found post")
         return ErrorResponseModel("Error occurred", 404, "post does not exist")
 
+
 @PostRouter.put("/id/{post_id}")
-async def update_item(post_id: str, post: Post, authorized: bool =  Depends(users_service.verify_token)):
-    if(authorized):
-        updated_post = await updateOne(posts_collection, post_id, post.model_dump())
-        if updated_post:
-            return ResponseModel({"id": post_id}, "Post sucessfully updated")
-        return ErrorResponseModel("Error occurred", 404, "post does not exist")
+async def update_item(post: UpdatePost, post_Id: str, authorized: bool = Depends(users_service.verify_token)):
+    if authorized:
+        try:
+            post_id = ObjectId(post_Id)
+            updated_post = await updateOne(posts_collection, post_id, post.model_dump())
+            if updated_post:
+                return ResponseModel({"id": str(post_id)}, "Post successfully updated")
+            return ErrorResponseModel("Error occurred", 404, "post does not exist")
+        except Exception as e:
+            return ErrorResponseModel(str(e), 400, "Invalid post ID")
 
 @PostRouter.put("/like/{post_id}")
 async def update_item(post_id: str, current_user: User = Depends(users_service.get_current_user)):
