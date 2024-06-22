@@ -52,6 +52,17 @@ async def reported_posts(current_user: User = Depends(users_service.get_current_
         return ResponseModel(reported, "List of all reported posts")
     raise CREDENTIALS_EXCEPTION
 
+@PostRouter.get("/banned-posts")
+async def banned_posts(current_user: User = Depends(users_service.get_current_user)):
+    if(users_service.is_admin(current_user)):
+        posts = await getAll(posts_collection)
+        banned = list(filter(lambda p: p["visibility"] == 0, posts))
+        for post in banned:
+            categories = await get_by_idlist(categories_collection, post["categories_id"])
+            post["categories"] = categories
+        return ResponseModel(banned, "List of all banned posts")
+    raise CREDENTIALS_EXCEPTION
+
 @PostRouter.post("/")
 async def create_post(post: Post, authorized: bool =  Depends(users_service.verify_token)):
     if(authorized):

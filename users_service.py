@@ -1,3 +1,4 @@
+import datetime
 from bson.objectid import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
@@ -82,6 +83,14 @@ async def get_login(newPassword:str,current_user: User =  Depends(get_current_us
 async def list_users():
     documents = await getAll(users_collection)
     return ResponseModel(documents, "List of all users")
+
+@UserRouter.get("/banned-users")
+async def banned_users(current_user: User = Depends(get_current_user)):
+    if(is_admin(current_user)):
+        users = await getAll(users_collection)
+        banned = list(filter(lambda p: "banned_status" in p.keys() and (p["banned_status"]["permanent"] or p["banned_status"]["endDate"] > datetime.now()), users))
+        return ResponseModel(banned, "List of all banned users")
+    raise CREDENTIALS_EXCEPTION
 
 
 @UserRouter.get("/user-type-list")
