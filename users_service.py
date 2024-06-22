@@ -30,8 +30,11 @@ async def get_current_user(req: Request):
     return item
 
 def is_admin(current_user: User):
-    creds = current_user.user_type
-    return creds.code == 1 and creds.type == "admin"
+    print(current_user)
+    if "user_type" not in current_user.keys():
+        return False
+    creds = current_user["user_type"]
+    return creds["code"] == 1 and creds["type"] == "admin"
 
 def verify_token(req: Request):
     token = req.headers["Authorization"]

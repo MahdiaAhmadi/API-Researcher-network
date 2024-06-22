@@ -41,6 +41,17 @@ async def user_posts(current_user: User = Depends(users_service.get_current_user
     visible_posts = list(filter(lambda p: p["visibility"] > 0, posts))
     return ResponseModel(visible_posts, "List of user posts")
 
+@PostRouter.get("/reported-posts")
+async def reported_posts(current_user: User = Depends(users_service.get_current_user)):
+    if(users_service.is_admin(current_user)):
+        posts = await getAll(posts_collection)
+        reported = list(filter(lambda p: "reports" in p.keys() and len(p["reports"]) > 0, posts))
+        for post in reported:
+            categories = await get_by_idlist(categories_collection, post["categories_id"])
+            post["categories"] = categories
+        return ResponseModel(reported, "List of all reported posts")
+    raise CREDENTIALS_EXCEPTION
+
 @PostRouter.post("/")
 async def create_post(post: Post, authorized: bool =  Depends(users_service.verify_token)):
     if(authorized):
