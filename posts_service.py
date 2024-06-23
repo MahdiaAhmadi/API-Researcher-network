@@ -3,12 +3,14 @@ from typing import Annotated
 
 from auth import CREDENTIALS_EXCEPTION
 from fastapi import APIRouter, Depends, Body
+from bson.objectid import ObjectId
+
 from motor.motor_asyncio import AsyncIOMotorClient
 
 import users_service
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      fuzzySearch, get_by_idlist, getAll, getOne, updateOne)
-from models import Post, User
+from models import Post, UpdatePost, User
 
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 client = AsyncIOMotorClient(MONGO_URL)
@@ -16,6 +18,7 @@ database = client["research_network"]
 posts_collection = database["posts"]
 users_collection = database["users"]
 categories_collection = database["categories"]
+comments_collection = database["comments"]
 
 PostRouter = APIRouter()
 
@@ -71,22 +74,25 @@ async def create_post(post: Post, authorized: bool =  Depends(users_service.veri
         return ResponseModel(response, "Post was created")
 
 @PostRouter.get("/id/{post_id}")
-async def read_item(post_id: str):
-   
+async def read_item(post_id: str, authorized: bool =  Depends(users_service.verify_token)):
+   if(authorized):
         item = await getOne(posts_collection, post_id)
         categories = await get_by_idlist(categories_collection, item["categories_id"])
+        comments = await get_by_idlist(comments_collection, item["comments_id"])
         item["categories"] = categories
+        item["comments"] = comments
         if item:
             return ResponseModel(item, "Found post")
-        return ErrorResponseModel("Error occurred", 404, "post does not exist")
+        return ErrorResponseModel("Error occurred", 400, "post does not exist")
+
 
 @PostRouter.put("/id/{post_id}")
-async def update_item(post_id: str, post: Post, authorized: bool =  Depends(users_service.verify_token)):
+async def update_item(post_id: str, post: UpdatePost, authorized: bool =  Depends(users_service.verify_token)):
     if(authorized):
         updated_post = await updateOne(posts_collection, post_id, post.model_dump())
         if updated_post:
             return ResponseModel({"id": post_id}, "Post sucessfully updated")
-        return ErrorResponseModel("Error occurred", 404, "post does not exist")
+        return ErrorResponseModel("Error occurred", 400, "post does not exist")
 
 @PostRouter.put("/like/{post_id}")
 async def update_item(post_id: str, current_user: User = Depends(users_service.get_current_user)):
@@ -96,7 +102,7 @@ async def update_item(post_id: str, current_user: User = Depends(users_service.g
     updated_post = await updateOne(posts_collection, post_id,post)
     if updated_post:
         return ResponseModel({"id": post_id}, "Post sucessfully updated")
-    return ErrorResponseModel("Error occurred", 404, "post does not exist")
+    return ErrorResponseModel("Error occurred", 400, "post does not exist")
 
 @PostRouter.delete("/id/{post_id}")
 async def delete_post(post_id: str, current_user: User = Depends(users_service.get_current_user)):
@@ -107,7 +113,7 @@ async def delete_post(post_id: str, current_user: User = Depends(users_service.g
             raise CREDENTIALS_EXCEPTION
         if deleted_post:
             return ResponseModel({"id": post_id}, "Post sucessfully deleted")
-        return ErrorResponseModel("Error occurred", 404, "post does not exist")
+        return ErrorResponseModel("Error occurred", 400, "post does not exist")
 
 @PostRouter.get("/by-title")
 async def find_by_name(title: str):
