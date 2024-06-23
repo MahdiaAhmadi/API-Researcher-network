@@ -18,10 +18,17 @@ class UserType(BaseModel):
     code: int = Field(...)
     type: str = Field(...)
 
+class Report(BaseModel):
+    user_id: str = Field(...)
+    reason: str = Field(...)
+
 class LoginUser(BaseModel):
     username: str 
     password: str 
 
+class Ban(BaseModel):
+    permanent: bool
+    endDate: datetime
 
 class AccountCreate(BaseModel):
     display_name: str = Field(...)
@@ -41,6 +48,7 @@ class User(BaseModel):
     user_type: UserType  = Field(...)
     institution_id: str = Field(...)
     birth_date: str = Field(...)
+    banned_status: Optional[Ban] = Field(default=None)
     posts_id: Optional[List[str]] = Field(default=[])
     comments_id: Optional[List[str]] = Field(default=[])
     liked_posts_id:Optional[List[str]] = Field(default=[])
@@ -71,7 +79,8 @@ class Post(BaseModel):
     content: str = Field(...) 
     comments_id: List[str] = Field(...) 
     research_link: str = Field(...)
-    visibility : int = Field(...)
+    reports: Optional[List[Report]] = Field(default=[])
+    visibility : int = Field(...) # 0 for Deleted, 1 for Private, 2 for Visible
     file_path: str = Field(...)
     created_at : datetime  = datetime.now()
 

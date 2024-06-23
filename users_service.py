@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
@@ -10,7 +11,7 @@ from auth import (CREDENTIALS_EXCEPTION, Token, create_access_token,
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      getAll, getFromIDList, getOne, responseid_handler,
                      updateOne)
-from models import AccountCreate, LoginUser, UpdateUserModel, User, UserType
+from models import AccountCreate, Ban, LoginUser, UpdateUserModel, User, UserType
 
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 client = AsyncIOMotorClient(MONGO_URL)
@@ -28,6 +29,13 @@ async def get_current_user(req: Request):
     if item is None:
         raise CREDENTIALS_EXCEPTION
     return item
+
+def is_admin(current_user: User):
+    print(current_user)
+    if "user_type" not in current_user.keys():
+        return False
+    creds = current_user["user_type"]
+    return creds["code"] == 1 and creds["type"] == "admin"
 
 def verify_token(req: Request):
     token = req.headers["Authorization"]
@@ -76,6 +84,14 @@ async def list_users():
     documents = await getAll(users_collection)
     return ResponseModel(documents, "List of all users")
 
+@UserRouter.get("/banned-users")
+async def banned_users(current_user: User = Depends(get_current_user)):
+    if(is_admin(current_user)):
+        users = await getAll(users_collection)
+        banned = list(filter(lambda p: "banned_status" in p.keys() and (p["banned_status"]["permanent"] or p["banned_status"]["endDate"] > datetime.now()), users))
+        return ResponseModel(banned, "List of all banned users")
+    raise CREDENTIALS_EXCEPTION
+
 
 @UserRouter.get("/user-type-list")
 async def list_usertype():
@@ -114,10 +130,23 @@ async def update_item(user_id: str, user: User):
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
 
 @UserRouter.delete("/delete-user/{user_id}")
-async def delete_user(user_id: str):
-    deleted_user = await deleteOne(users_collection, user_id)
-    if deleted_user:
-        return ResponseModel({"id": user_id}, "User sucessfully deleted")
+async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
+    if(is_admin(current_user)):
+        item = await getOne(users_collection, user_id)
+        ban = Ban(permanent=True,endDate=datetime.now())
+        deleted_user = await updateOne(users_collection, user_id, {"banned_status": ban.model_dump()})
+        if deleted_user:
+            return ResponseModel({"id": user_id}, "User sucessfully deleted")
+    return ErrorResponseModel("Error occurred", 404, "user does not exist")
+
+@UserRouter.delete("/suspend-user/{user_id}")
+async def suspend_user(user_id: str, suspension_days: int, current_user: User = Depends(get_current_user)):
+    if(is_admin(current_user)):
+        item = await getOne(users_collection, user_id)
+        ban = Ban(permanent=False, endDate=datetime.now() + timedelta(days=suspension_days))
+        suspended_user = await updateOne(users_collection, user_id, {"banned_status": ban.model_dump()})
+        if suspended_user:
+            return ResponseModel({"id": user_id}, f'User was suspended for {suspension_days} days')
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
 
 @UserRouter.post("/follow-user/{author_id}")

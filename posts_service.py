@@ -1,7 +1,10 @@
 from datetime import datetime
+from typing import Annotated
 
+from auth import CREDENTIALS_EXCEPTION
+from fastapi import APIRouter, Depends, Body
 from bson.objectid import ObjectId
-from fastapi import APIRouter, Depends
+
 from motor.motor_asyncio import AsyncIOMotorClient
 
 import users_service
@@ -27,7 +30,9 @@ async def list_posts(authorized: bool =  Depends(users_service.verify_token)):
             categories = await get_by_idlist(categories_collection, post["categories_id"])
             post["categories"] = categories
 
-        return ResponseModel(documents, "List of all posts")
+        visible_posts = list(filter(lambda p: p["visibility"] > 0, documents))
+        print(visible_posts)
+        return ResponseModel(visible_posts, "List of all posts")
 
 @PostRouter.get("/user-posts")
 async def user_posts(current_user: User = Depends(users_service.get_current_user)):
@@ -35,7 +40,31 @@ async def user_posts(current_user: User = Depends(users_service.get_current_user
     for post in posts:
         categories = await get_by_idlist(categories_collection, post["categories_id"])
         post["categories"] = categories
-    return ResponseModel(posts, "List of user posts")
+
+    visible_posts = list(filter(lambda p: p["visibility"] > 0, posts))
+    return ResponseModel(visible_posts, "List of user posts")
+
+@PostRouter.get("/reported-posts")
+async def reported_posts(current_user: User = Depends(users_service.get_current_user)):
+    if(users_service.is_admin(current_user)):
+        posts = await getAll(posts_collection)
+        reported = list(filter(lambda p: "reports" in p.keys() and len(p["reports"]) > 0, posts))
+        for post in reported:
+            categories = await get_by_idlist(categories_collection, post["categories_id"])
+            post["categories"] = categories
+        return ResponseModel(reported, "List of all reported posts")
+    raise CREDENTIALS_EXCEPTION
+
+@PostRouter.get("/banned-posts")
+async def banned_posts(current_user: User = Depends(users_service.get_current_user)):
+    if(users_service.is_admin(current_user)):
+        posts = await getAll(posts_collection)
+        banned = list(filter(lambda p: p["visibility"] == 0, posts))
+        for post in banned:
+            categories = await get_by_idlist(categories_collection, post["categories_id"])
+            post["categories"] = categories
+        return ResponseModel(banned, "List of all banned posts")
+    raise CREDENTIALS_EXCEPTION
 
 @PostRouter.post("/")
 async def create_post(post: Post, authorized: bool =  Depends(users_service.verify_token)):
@@ -76,9 +105,12 @@ async def update_item(post_id: str, current_user: User = Depends(users_service.g
     return ErrorResponseModel("Error occurred", 400, "post does not exist")
 
 @PostRouter.delete("/id/{post_id}")
-async def delete_post(post_id: str):
-    
-        deleted_post = await deleteOne(posts_collection, post_id)
+async def delete_post(post_id: str, current_user: User = Depends(users_service.get_current_user)):
+        post:dict = await getOne(posts_collection, post_id)
+        if post["author_id"] == current_user.id or users_service.is_admin(current_user):
+            deleted_post = await updateOne(posts_collection, post_id, { "visibility":0})
+        else:
+            raise CREDENTIALS_EXCEPTION
         if deleted_post:
             return ResponseModel({"id": post_id}, "Post sucessfully deleted")
         return ErrorResponseModel("Error occurred", 400, "post does not exist")
@@ -106,5 +138,15 @@ async def find_by_name(categoryName: str):
         posts = [*posts,*find]
     return ResponseModel(posts, "All posts")
 
-
-
+@PostRouter.post("/report-post")
+async def report_post(postId: Annotated[str, Body(embed=True)], reason: Annotated[str, Body(embed=True)], current_user: User = Depends(users_service.get_current_user)):
+    print("reporting")
+    report = {"user_id": current_user["id"], "reason":reason}
+    post:dict = await getOne(posts_collection, postId)
+    current_reports = post["reports"] if "reports" in post.keys() else []
+    for r in current_reports:
+        if report["user_id"] == r["user_id"]:
+            return ResponseModel(False, "Post already reported")
+    current_reports.append(report)
+    updated = await updateOne(posts_collection, postId, { "reports": current_reports })
+    return ResponseModel(updated, "Post was reported")
