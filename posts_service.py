@@ -74,6 +74,8 @@ async def create_post(post: Post, authorized: bool =  Depends(users_service.veri
 async def read_item(post_id: str):
    
         item = await getOne(posts_collection, post_id)
+        categories = await get_by_idlist(categories_collection, item["categories_id"])
+        item["categories"] = categories
         if item:
             return ResponseModel(item, "Found post")
         return ErrorResponseModel("Error occurred", 404, "post does not exist")

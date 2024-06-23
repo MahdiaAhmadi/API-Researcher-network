@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
@@ -11,7 +11,7 @@ from auth import (CREDENTIALS_EXCEPTION, Token, create_access_token,
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      getAll, getFromIDList, getOne, responseid_handler,
                      updateOne)
-from models import AccountCreate, LoginUser, UpdateUserModel, User, UserType
+from models import AccountCreate, Ban, LoginUser, UpdateUserModel, User, UserType
 
 MONGO_URL = "mongodb+srv://felipebuenosouza:as%40ClusterAcess@cluster0.a5kds6l.mongodb.net/"
 client = AsyncIOMotorClient(MONGO_URL)
@@ -130,10 +130,23 @@ async def update_item(user_id: str, user: User):
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
 
 @UserRouter.delete("/delete-user/{user_id}")
-async def delete_user(user_id: str):
-    deleted_user = await deleteOne(users_collection, user_id)
-    if deleted_user:
-        return ResponseModel({"id": user_id}, "User sucessfully deleted")
+async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
+    if(is_admin(current_user)):
+        item = await getOne(users_collection, user_id)
+        ban = Ban(permanent=True,endDate=datetime.now())
+        deleted_user = await updateOne(users_collection, user_id, {"banned_status": ban.model_dump()})
+        if deleted_user:
+            return ResponseModel({"id": user_id}, "User sucessfully deleted")
+    return ErrorResponseModel("Error occurred", 404, "user does not exist")
+
+@UserRouter.delete("/suspend-user/{user_id}")
+async def suspend_user(user_id: str, suspension_days: int, current_user: User = Depends(get_current_user)):
+    if(is_admin(current_user)):
+        item = await getOne(users_collection, user_id)
+        ban = Ban(permanent=False, endDate=datetime.now() + timedelta(days=suspension_days))
+        suspended_user = await updateOne(users_collection, user_id, {"banned_status": ban.model_dump()})
+        if suspended_user:
+            return ResponseModel({"id": user_id}, f'User was suspended for {suspension_days} days')
     return ErrorResponseModel("Error occurred", 404, "user does not exist")
 
 @UserRouter.post("/follow-user/{author_id}")
