@@ -1,13 +1,9 @@
-from datetime import datetime
-from typing import Annotated
-
-from auth import CREDENTIALS_EXCEPTION
-from fastapi import APIRouter, Depends, Body
-from bson.objectid import ObjectId
-
+from fastapi import APIRouter, Body, Depends
 from motor.motor_asyncio import AsyncIOMotorClient
+from typing_extensions import Annotated
 
 import users_service
+from auth import CREDENTIALS_EXCEPTION
 from helpers import (ErrorResponseModel, ResponseModel, addOne, deleteOne,
                      fuzzySearch, get_by_idlist, getAll, getOne, updateOne)
 from models import Post, UpdatePost, User
