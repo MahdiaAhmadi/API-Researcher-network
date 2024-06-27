@@ -112,27 +112,41 @@ async def delete_post(post_id: str, current_user: User = Depends(users_service.g
         return ErrorResponseModel("Error occurred", 400, "post does not exist")
 
 @PostRouter.get("/by-title")
-async def find_by_name(title: str):
-    posts = await fuzzySearch(posts_collection, "title", title)
-    return ResponseModel(posts, f"All posts that fuzzy match {title}")
+async def find_by_name(title: str,authorized: bool =  Depends(users_service.verify_token)):
+    if(authorized):
+        posts = await fuzzySearch(posts_collection, "title", title)
+        for post in posts:
+            categories = await get_by_idlist(categories_collection, post["categories_id"])
+            post["categories"] = categories
+        return ResponseModel(posts, f"All posts that fuzzy match {title}")
 
 @PostRouter.get("/by-author")
-async def find_by_name(authorName: str):
-    users = await fuzzySearch(users_collection, "display_name", authorName)
-    posts =[]
-    for user in users:
-        find = await fuzzySearch(posts_collection, "author_id", user["id"])
-        posts = [*posts,*find]
-    return ResponseModel(posts, "All posts")
+async def find_by_name(authorName: str,authorized: bool =  Depends(users_service.verify_token)):
+    if(authorized):
+        users = await fuzzySearch(users_collection, "display_name", authorName)
+        posts =[]
+        for user in users:
+            find = await fuzzySearch(posts_collection, "author_id", user["id"])
+            posts = [*posts,*find]
+
+        for post in posts:
+            categories = await get_by_idlist(categories_collection, post["categories_id"])
+            post["categories"] = categories
+        return ResponseModel(posts, "All posts")
 
 @PostRouter.get("/by-category")
-async def find_by_name(categoryName: str):
-    categories = await fuzzySearch(categories_collection, "name", categoryName)
-    posts =[]
-    for cat in categories:
-        find = await fuzzySearch(posts_collection, "categories_id", cat["id"])
-        posts = [*posts,*find]
-    return ResponseModel(posts, "All posts")
+async def find_by_name(categoryName: str,authorized: bool =  Depends(users_service.verify_token)):
+    if(authorized):
+        categories = await fuzzySearch(categories_collection, "name", categoryName)
+        posts =[]
+        for cat in categories:
+            find = await fuzzySearch(posts_collection, "categories_id", cat["id"])
+            posts = [*posts,*find]
+        
+        for post in posts:
+            categories = await get_by_idlist(categories_collection, post["categories_id"])
+            post["categories"] = categories
+        return ResponseModel(posts, "All posts")
 
 @PostRouter.post("/report-post")
 async def report_post(postId: Annotated[str, Body(embed=True)], reason: Annotated[str, Body(embed=True)], current_user: User = Depends(users_service.get_current_user)):
