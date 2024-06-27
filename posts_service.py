@@ -103,7 +103,7 @@ async def update_item(post_id: str, current_user: User = Depends(users_service.g
 @PostRouter.delete("/id/{post_id}")
 async def delete_post(post_id: str, current_user: User = Depends(users_service.get_current_user)):
         post:dict = await getOne(posts_collection, post_id)
-        if post["author_id"] == current_user.id or users_service.is_admin(current_user):
+        if post["author_id"] == current_user["id"] or users_service.is_admin(current_user):
             deleted_post = await updateOne(posts_collection, post_id, { "visibility":0})
         else:
             raise CREDENTIALS_EXCEPTION

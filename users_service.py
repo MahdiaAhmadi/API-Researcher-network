@@ -19,6 +19,9 @@ database = client["research_network"]
 users_collection = database["users"]
 usertype_collection = database["user_type"]
 
+def is_banned(current_user):
+    return ("banned_status" in current_user.keys()) and current_user["banned_status"] and (current_user["banned_status"]["permanent"] or current_user["banned_status"]["endDate"] > datetime.now())
+
 async def get_current_user(req: Request):
     token = req.headers["Authorization"]
     print(token)
@@ -27,6 +30,8 @@ async def get_current_user(req: Request):
         raise CREDENTIALS_EXCEPTION
     item = await getOne(users_collection, user_id)
     if item is None:
+        raise CREDENTIALS_EXCEPTION
+    if is_banned(item):
         raise CREDENTIALS_EXCEPTION
     return item
 
