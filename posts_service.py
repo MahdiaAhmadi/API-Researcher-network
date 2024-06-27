@@ -24,6 +24,9 @@ async def list_posts(authorized: bool =  Depends(users_service.verify_token)):
         documents = await getAll(posts_collection)
         for post in documents:
             categories = await get_by_idlist(categories_collection, post["categories_id"])
+            author = await getOne(users_collection, post["author_id"])
+            if users_service.is_banned(author):
+                post["visibility"] = 0
             post["categories"] = categories
 
         visible_posts = list(filter(lambda p: p["visibility"] > 0, documents))
@@ -117,8 +120,13 @@ async def find_by_name(title: str,authorized: bool =  Depends(users_service.veri
         posts = await fuzzySearch(posts_collection, "title", title)
         for post in posts:
             categories = await get_by_idlist(categories_collection, post["categories_id"])
+            author = await getOne(users_collection, post["author_id"])
+            if users_service.is_banned(author):
+                post["visibility"] = 0
             post["categories"] = categories
-        return ResponseModel(posts, f"All posts that fuzzy match {title}")
+
+        visible_posts = list(filter(lambda p: p["visibility"] > 0, posts))
+        return ResponseModel(visible_posts, f"All posts that fuzzy match {title}")
 
 @PostRouter.get("/by-author")
 async def find_by_name(authorName: str,authorized: bool =  Depends(users_service.verify_token)):
@@ -126,8 +134,9 @@ async def find_by_name(authorName: str,authorized: bool =  Depends(users_service
         users = await fuzzySearch(users_collection, "display_name", authorName)
         posts =[]
         for user in users:
-            find = await fuzzySearch(posts_collection, "author_id", user["id"])
-            posts = [*posts,*find]
+            if not users_service.is_banned(user):
+                find = await fuzzySearch(posts_collection, "author_id", user["id"])
+                posts = [*posts,*find]
 
         for post in posts:
             categories = await get_by_idlist(categories_collection, post["categories_id"])
@@ -145,8 +154,13 @@ async def find_by_name(categoryName: str,authorized: bool =  Depends(users_servi
         
         for post in posts:
             categories = await get_by_idlist(categories_collection, post["categories_id"])
+            author = await getOne(users_collection, post["author_id"])
+            if users_service.is_banned(author):
+                post["visibility"] = 0
             post["categories"] = categories
-        return ResponseModel(posts, "All posts")
+
+        visible_posts = list(filter(lambda p: p["visibility"] > 0, posts))
+        return ResponseModel(visible_posts, "All posts")
 
 @PostRouter.post("/report-post")
 async def report_post(postId: Annotated[str, Body(embed=True)], reason: Annotated[str, Body(embed=True)], current_user: User = Depends(users_service.get_current_user)):
